@@ -24,10 +24,32 @@ This repository contains custom scripts for NBIS support project #3983 "RNA-Seq 
 
 The workflow for annotation of *de novo* assembled transcripts used in this study is summarised below. Details are given in the project report, section *Bioinformatics Methods*.
 
-1. `Trinotate` pipeline, including `BLAST` search for homologues (`blastp` using ORFs predicted by `TransDecoder.Predict`).
+1. `Trinotate` pipeline ([Trinotate manual](https://github.com/Trinotate/Trinotate.github.io/wiki)), including `BLAST` search for homologues: `blastp` using ORFs predicted by `TransDecoder.Predict` ([Transdecoder manual](https://github.com/TransDecoder/TransDecoder/wiki));
 
 2. Reciprocal `BLAST` (`blastp`). All ARP7 gene IDs were used. A custom perl script `get_ids_from_fa.pl` was used to obtain full IDs
-from fasta file based on a list of partial IDs output by `parse_trinotate_report_ids.pl`.
+from fasta file based on a list of partial IDs output by `parse_trinotate_report_ids.pl`;
+
+3. Parsing results of reciprocal BLAST: `parse_reblast_arp7_2018_v2.pl`;
+
+4. Clustering of *de novo* transcripts into "genes" based on their expression level and sequence using `corset` ([corset manual](https://github.com/Oshlack/Corset/wiki)); alignment of all reads to their respective transcripts was performed first using `bowtie2`; this step produced count tables at a gene level as well as a list of `Trinity` isoform IDs and clusters (aka "corset clusters") they were assigend to.
+
+5. Intersecting `corset` cluster IDs and reciprocal `blast` hits using script `annotate_denovo_clusters_arp7.pl`;
+
+6. Merging count tables for four species using `integrate_homologues_counts.pl`.
 
 
-3. 
+## Note on common gene identifiers
+
+Common gene identfiers were assigned using the following strategy: *de novo* transcripts
+with annotation confirmed by reciprocal blast in one of the following scenarios:
+confirmed as the "best hit" or confirmed as one of the "top five" hits were
+assigned to ARP7 consensus group based on the identity of the blastp/reciprocal
+blast best hit. Transcripts for which the initial blastp hit was confirmed as one of the
+"top five" hits in reciprocal blast were further filtered to retain only hits where both
+top hits from blastp and reciprocal blast belong to the same ARP7 consensus group.
+The output of each of these three groups was processed separately. Corresponding
+count tables were generated on a gene level for de novo transcripts annotated to
+clusters output by Corset. **Only ARP6/7 groups which had 1:1 matching with a
+homologous gene in each of the species were included in the final count table.** (E.g.
+ARP7 consensus group which had 2 homologues in one of the species is not included
+in the final count table.)
